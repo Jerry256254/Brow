@@ -109,14 +109,14 @@ impl Framebuffer {
 /// `ds` is the device scale: all coordinates and glyphs are multiplied by it.
 pub fn render(root: &LayoutBox, width: usize, height: usize, scroll_y: f32, ds: u32) -> Framebuffer {
     let mut fb = Framebuffer::new(width, height);
-    fb.clear(Color::rgb(255, 255, 255));
+    fb.clear(crate::theme::PAGE_BG);
     let dsf = ds as f32;
     walk(root, 0.0, -scroll_y, &mut fb, dsf, ds);
     fb
 }
 
 fn walk(b: &LayoutBox, dx: f32, dy: f32, fb: &mut Framebuffer, dsf: f32, ds: u32) {
-    // Cull subtrees fully outside the viewport (vertical axis) — this is what
+    // Cull subtrees fully outside the viewport (vertical axis) - this is what
     // keeps painting snappy on very tall pages.
     let y_dev = (b.y + dy) * dsf;
     if y_dev >= fb.height as f32 || y_dev + b.h * dsf <= 0.0 {

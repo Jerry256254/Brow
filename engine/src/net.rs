@@ -1,6 +1,6 @@
 //! Own HTTP/1.1 client over raw TCP (plus file:// for local pages), with
 //! hard resource limits. HTTPS is supported behind the `tls` feature via
-//! rustls (TLS itself is never hand-rolled) — the rendering pipeline stays ours.
+//! rustls (TLS itself is never hand-rolled) - the rendering pipeline stays ours.
 
 use std::fmt;
 use std::io::{Read, Write};

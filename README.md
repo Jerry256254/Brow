@@ -4,8 +4,8 @@ A smooth, modern, **bloat-free browser with its own rendering engine** and a bui
 
 **Naming:** the browser is **KucLab Brow** (binary `brow`); its engine is **Brownie** (crate `brownie`).
 
-Everything you see is rendered by **Brownie** (`brownie`) — our own HTML parser, CSS cascade,
-layout engine, software rasterizer and PNG encoder — written in pure Rust with
+Everything you see is rendered by **Brownie** (`brownie`) - our own HTML parser, CSS cascade,
+layout engine, software rasterizer and PNG encoder - written in pure Rust with
 **zero external dependencies**. No Blink, no WebKit, no bloat.
 
 ## Features (v0.1)
@@ -14,12 +14,30 @@ layout engine, software rasterizer and PNG encoder — written in pure Rust with
 - Own CSS parser + cascade (UA sheet, author sheets, inline styles, specificity)
 - Own layout engine: block + inline boxes, word wrap, text-align, margins/padding/borders
 - Own software rasterizer with a built-in bitmap font (no system fonts needed)
-- Own PNG encoder (zlib stored blocks) — screenshots without any image crate
+- Own PNG encoder (zlib stored blocks) - screenshots without any image crate
 - Own HTTP/1.1 client (redirects, chunked encoding) + `file://` support
 - Own ad blocker: hosts-style entries, `||domain^` anchored patterns, `*/ads/*` wildcards, `@@` exceptions
 - Terminal shell: tabs, address bar, scrolling, screenshots
-- HTTPS via the optional `tls` feature (rustls + webpki roots — TLS is the one
+- HTTPS via the optional `tls` feature (rustls + webpki roots - TLS is the one
   thing we deliberately do not hand-roll): `cargo build --release -p brow --features tls`
+
+## Design
+
+KucLab Brow follows the **Gerin Paper Design v2** rules, adapted to a terminal/own-engine
+browser (see `engine/src/theme.rs` for the tokens): paper background `#f2eee6`, surface
+`#fffdf9`, 1 px hairlines `#d9d1c4`, ink `#1c1b18`/`#14130f`, muted `#5b554a`, one accent
+blue `#2b6ca3`, dark button `#16202a`. No gradients, no purple, no emoji, no glow; copy uses
+plain hyphens (`-`), never em dashes; one primary action per screen.
+
+The browser chrome (header with wordmark `KucLab Brow`, centered tabs, hairline rules, URL
+input on a surface, muted footer) and the built-in start page (`shell/assets/start.html`)
+are styled with the same tokens.
+
+Samples (PNG, rendered by Brownie itself):
+
+- `docs/samples/ui.png` - one full browser frame (chrome + start page): `brow --frame-shot docs/samples/ui.png`
+- `docs/samples/start.png` - the start page alone
+- `docs/samples/demo.png` - `demo/site` rendered (note `blocked: 2` - ads never fetched)
 
 ## Performance
 
@@ -41,13 +59,13 @@ brow --bench file:///path/to/big.html --iterations 20 --width 320 --height 2000
 - **Resource limits everywhere**: URL ≤ 4096 B, response headers ≤ 64 KB,
   body ≤ 32 MB (also enforced for chunked), ≤ 5 redirects, connect/read
   timeouts, DOM depth ≤ 512, CSS rules ≤ 10 000, filter rules ≤ 250 000,
-  patterns ≤ 1 KB, framebuffer ≤ 64 Mpx — hostile input can't exhaust memory
+  patterns ≤ 1 KB, framebuffer ≤ 64 Mpx - hostile input can't exhaust memory
   or hang the engine (regression-tested in `engine/tests/security.rs`).
 - **Same-origin policy**: subresources (`<link>`, `<script>`, `<img>`, ...)
-  are only fetched from the page's own origin — a remote page cannot read
+  are only fetched from the page's own origin - a remote page cannot read
   `file://` or other origins through us.
 - **No https→http downgrade** on redirects.
-- **Ad blocker runs before any connection** — blocked requests are never sent.
+- **Ad blocker runs before any connection** - blocked requests are never sent.
 - **HTTPS** with rustls behind `--features tls` (default build stays
   zero-dependency); certificate validation via webpki roots, tested against a
   loopback TLS server (`engine/tests/tls.rs`).
@@ -78,7 +96,7 @@ disable with `--no-adblock`).
 ## Architecture
 
 ```
-shell/    brow binary — terminal UI (tabs, URL bar) + CLI modes
+shell/    brow binary - terminal UI (tabs, URL bar) + CLI modes
 engine/   brownie library (the Brownie engine)
   html.rs     HTML tokenizer + tree builder (arena DOM)
   css.rs      CSS parser, selectors, colors
@@ -87,8 +105,9 @@ engine/   brownie library (the Brownie engine)
   font.rs     built-in 5x7 bitmap font
   paint.rs    RGBA framebuffer rasterizer
   png.rs      PNG encoder
-  net.rs      HTTP/1.1 client, redirects, chunked, file://
+  net.rs      HTTP/1.1 client, redirects, chunked, file:// (+ optional tls feature)
   adblock.rs  filter-list engine (hosts, ||anchored, wildcards, @@exceptions)
+  theme.rs    design tokens (Gerin Paper Design v2, adapted): paper/ink palette
 demo/     local demo site
 filters/  default blocklist
 ```

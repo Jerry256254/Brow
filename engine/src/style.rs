@@ -157,6 +157,21 @@ pub fn expand_declaration(prop: &str, value: &str) -> Vec<(String, String)> {
             }
             out
         }
+        "border-top" | "border-right" | "border-bottom" | "border-left" => {
+            let side = prop.strip_prefix("border-").unwrap();
+            let mut out = Vec::new();
+            for tok in v.split_whitespace() {
+                if let Some(Length::Px(px)) = parse_length(tok) {
+                    out.push((format!("border-{}-width", side), px.to_string()));
+                } else if css::parse_color(tok).is_some() {
+                    out.push(("border-color".to_string(), tok.to_string()));
+                }
+            }
+            if out.is_empty() {
+                out.push((prop.to_string(), v.to_string()));
+            }
+            out
+        }
         "background" | "background-color" => {
             let first = v.split_whitespace().next().unwrap_or("");
             if prop == "background" && css::parse_color(first).is_some() {

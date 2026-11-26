@@ -162,11 +162,11 @@ fn file_scheme_loads_local_demo() {
     let mut b = browser_with("*/ads.js\n*/ads/*\n");
     let demo = concat!(env!("CARGO_MANIFEST_DIR"), "/../demo/site/index.html");
     let page = b.open(&format!("file://{}", demo)).expect("open file");
-    assert_eq!(page.title, "KucLab Brow demo");
+    assert_eq!(page.title, "KucLab Brow - demo page");
     // style.css must have been picked up via <link>
     let h1 = page.doc.find_first("h1").unwrap();
     let style = brownie::style::compute_style(&page.doc, h1, &page.sheets);
-    assert_eq!(style.color, brownie::css::Color::rgb(0x3b, 0x2f, 0xd4));
+    assert_eq!(style.color, brownie::css::Color::rgb(0x14, 0x13, 0x0f));
     // ads.js and ads/banner.png are blocked by the filter
     assert_eq!(b.blocked_count, 2, "script + img blocked, got {}", b.blocked_count);
 }

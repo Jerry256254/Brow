@@ -2,11 +2,13 @@
 
 use brownie::adblock::AdBlock;
 use brownie::layout::{self, BoxKind};
+use brownie::theme;
 use brownie::{Browser, Page};
 use std::io::{IsTerminal, Read, Write};
 use std::process::{Command, Stdio};
 
 const DEFAULT_FILTERS: &str = "filters/blocklist.txt";
+const START_PAGE: &str = include_str!("../assets/start.html");
 
 struct Tab {
     url: String,
@@ -24,7 +26,7 @@ fn main() {
 }
 
 fn usage() -> String {
-    "KucLab Brow 0.1 — own engine, no bloat, ad-blocked\n\
+    "KucLab Brow 0.1 - own engine (Brownie), no bloat, ad-blocked\n\
      \n\
      USAGE:\n\
      \x20 brow [OPTIONS] [URL]        interactive terminal browser\n\
@@ -33,6 +35,7 @@ fn usage() -> String {
      \x20 brow --dump-layout URL      print layout box tree (--width N, default 80)\n\
      \x20 brow --screenshot URL OUT.png [--width N --height N --scale N]\n\
      \x20 brow --bench URL [--iterations N --width N --height N]   pipeline benchmark\n\
+     \x20 brow --frame-shot OUT.png [--width N --height N --scale N]   render one UI frame to PNG (design sample)\n\
      \n\
      OPTIONS:\n\
      \x20 --filters PATH              ad-block filter list (default: ./filters/blocklist.txt if present)\n\
@@ -125,6 +128,15 @@ fn run(args: &[String]) -> Result<(), String> {
         return Ok(());
     }
 
+    if let Some(i) = args.iter().position(|a| a == "--frame-shot") {
+        let out = args.get(i + 1).ok_or("--frame-shot needs an output .png path")?;
+        let width: usize = arg_value(args, "--width", "480").parse().map_err(|_| "bad --width")?;
+        let height: usize = arg_value(args, "--height", "340").parse().map_err(|_| "bad --height")?;
+        let scale: u32 = arg_value(args, "--scale", "2").parse().map_err(|_| "bad --scale")?;
+        frame_shot(out, width, height, scale)?;
+        return Ok(());
+    }
+
     if let Some(i) = args.iter().position(|a| a == "--screenshot") {
         let url = args.get(i + 1).ok_or("--screenshot needs a URL")?;
         let out = args.get(i + 2).ok_or("--screenshot needs an output .png path")?;
@@ -133,7 +145,7 @@ fn run(args: &[String]) -> Result<(), String> {
         let scale: u32 = arg_value(args, "--scale", "2").parse().map_err(|_| "bad --scale")?;
         let mut b = make_browser(args)?;
         let page = b.screenshot(url, out, width, height, scale).map_err(|e| e.to_string())?;
-        println!("saved {} ({}x{} @{}x) — title: {:?} — blocked: {}", out, width, height, scale, page.title, b.blocked_count);
+        println!("saved {} ({}x{} @{}x) - title: {:?} - blocked: {}", out, width, height, scale, page.title, b.blocked_count);
         return Ok(());
     }
 
@@ -291,33 +303,78 @@ fn interactive(start_url: Option<String>) -> Result<(), String> {
                 url: String::new(),
                 page: None,
                 scroll: 0.0,
-                status: "KucLab Brow ready — press / to enter a URL".to_string(),
+                status: "KucLab Brow ready - press / to enter a URL".to_string(),
             });
         }
-        // render
-        let content_rows = rows.saturating_sub(2).max(1);
+        // auto-load the paper start page on empty tabs
+        if tabs[active].page.is_none() && tabs[active].url.is_empty() {
+            match browser.open_source("brow://start", START_PAGE) {
+                Ok(p) => {
+                    tabs[active].url = "brow://start".to_string();
+                    tabs[active].page = Some(p);
+                    tabs[active].status = "start page".to_string();
+                }
+                Err(e) => tabs[active].status = format!("start page error: {}", e),
+            }
+        }
+
+        // render - paper chrome: header / hairline-or-input / content / hairline / footer
+        let content_rows = rows.saturating_sub(4).max(1);
         let fb_w = cols;
         let fb_h = content_rows * 2;
         let mut screen = String::new();
         screen.push_str("\x1b[H");
 
-        // address bar row
-        let mut bar = String::new();
+        // header row on paper
+        let mut segs: Vec<(String, brownie::css::Color)> =
+            vec![("KucLab Brow".to_string(), theme::INK_STRONG)];
         for (i, t) in tabs.iter().enumerate() {
-            if i > 0 {
-                bar.push_str(" ");
-            }
-            bar.push_str(&format!("[{}] {}", i + 1, short(&t.url, 24)));
+            let c = if i == active { theme::ACCENT } else { theme::MUTED };
+            segs.push((format!("  {} {}", i + 1, short(&t.url, 18)), c));
         }
-        let prompt = if bar_mode { " > " } else { "  " };
-        let bar_text = format!("{}{}{}", bar, prompt, bar_input);
-        screen.push_str("\x1b[48;2;30;30;46m\x1b[38;2;255;255;255m");
-        let mut line = bar_text;
-        while line.chars().count() < cols {
-            line.push(' ');
+        let right = format!("ads blocked: {}", browser.blocked_count);
+        let used: usize =
+            segs.iter().map(|(s, _)| s.chars().count()).sum::<usize>() + right.chars().count();
+        let pad = cols.saturating_sub(used);
+        screen.push_str(&esc_bg(theme::PAPER));
+        for (s, c) in &segs {
+            screen.push_str(&esc_fg(*c));
+            screen.push_str(s);
         }
-        screen.push_str(&line[..]);
+        screen.push_str(&esc_fg(theme::MUTED));
+        for _ in 0..pad {
+            screen.push(' ');
+        }
+        screen.push_str(&esc_fg(theme::MUTED_2));
+        screen.push_str(&right);
         screen.push_str("\x1b[0m\n");
+
+        // hairline row, or the URL input on a surface when editing
+        if bar_mode {
+            let prompt = " open: ";
+            screen.push_str(&esc_bg(theme::SURFACE));
+            screen.push_str(&esc_fg(theme::LINE));
+            screen.push('│');
+            screen.push_str(&esc_fg(theme::INK));
+            screen.push_str(prompt);
+            screen.push_str(&bar_input);
+            screen.push_str(&esc_fg(theme::ACCENT));
+            screen.push('█');
+            let used = 1 + prompt.chars().count() + bar_input.chars().count() + 1;
+            for _ in 0..cols.saturating_sub(used + 1) {
+                screen.push(' ');
+            }
+            screen.push_str(&esc_fg(theme::LINE));
+            screen.push('│');
+            screen.push_str("\x1b[0m\n");
+        } else {
+            screen.push_str(&esc_bg(theme::PAPER));
+            screen.push_str(&esc_fg(theme::LINE));
+            for _ in 0..cols {
+                screen.push('─');
+            }
+            screen.push_str("\x1b[0m\n");
+        }
 
         // content
         let rendered = match tabs[active]
@@ -347,20 +404,35 @@ fn interactive(start_url: Option<String>) -> Result<(), String> {
                 pct
             );
         } else {
-            let msg = "KucLab Brow — own engine, zero bloat. Press / and type a URL, Enter to load.";
+            screen.push_str(&esc_bg(theme::PAPER));
+            screen.push_str(&esc_fg(theme::MUTED));
+            let msg = "KucLab Brow - engine: Brownie. Press / and type a URL, Enter to load.";
             for r in 0..content_rows {
                 if r == 2 {
                     screen.push_str(msg);
+                } else {
+                    for _ in 0..cols {
+                        screen.push(' ');
+                    }
                 }
-                screen.push('\n');
+                screen.push_str("\x1b[0m\n");
             }
         }
 
-        // status row
-        screen.push_str("\x1b[48;2;60;60;60m\x1b[38;2;230;230;230m");
-        let mut st = format!(" {}  [/] url  [j/k] scroll  [r] reload  [t] tab  [Tab] switch  [a] adblock {}  [s] shot  [q] quit",
+        // footer hairline + footer row
+        screen.push_str(&esc_bg(theme::PAPER));
+        screen.push_str(&esc_fg(theme::LINE));
+        for _ in 0..cols {
+            screen.push('─');
+        }
+        screen.push_str("\x1b[0m\n");
+        screen.push_str(&esc_bg(theme::PAPER));
+        screen.push_str(&esc_fg(theme::MUTED_2));
+        let mut st = format!(
+            " {}  [/] open  [j/k] scroll  [r] reload  [t] tab  [Tab] switch  [a] adblock {}  [s] shot  [q] quit",
             tabs[active].status,
-            if browser.adblock.is_empty() { "OFF" } else { "ON" });
+            if browser.adblock.is_empty() { "off" } else { "on" }
+        );
         while st.chars().count() < cols {
             st.push(' ');
         }
@@ -470,6 +542,69 @@ fn interactive(start_url: Option<String>) -> Result<(), String> {
             }
         }
     }
+}
+
+fn esc_fg(c: brownie::css::Color) -> String {
+    format!("\x1b[38;2;{};{};{}m", c.r, c.g, c.b)
+}
+
+fn esc_bg(c: brownie::css::Color) -> String {
+    format!("\x1b[48;2;{};{};{}m", c.r, c.g, c.b)
+}
+
+/// Render one frame of the interactive UI (paper chrome + start page) to a PNG.
+/// Used to produce design samples without a terminal.
+fn frame_shot(out_path: &str, width: usize, height: usize, scale: u32) -> Result<(), String> {
+    use brownie::theme::*;
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let mut browser = make_browser(&args)?;
+    let page = browser.open_source("brow://start", START_PAGE).map_err(|e| e.to_string())?;
+    let ds = scale.max(1);
+    let dsf = ds as f32;
+    let mut fb = brownie::Framebuffer::new(width * ds as usize, height * ds as usize);
+    fb.clear(PAPER);
+    // header
+    fb.fill_rect(0.0, 0.0, width as f32 * dsf, 40.0 * dsf, PAPER);
+    fb.draw_text(18.0 * dsf, 10.0 * dsf, "KucLab Brow", 30.0 * dsf, INK_STRONG);
+    fb.draw_text(190.0 * dsf, 16.0 * dsf, "1  brow://start", 13.0 * dsf, ACCENT);
+    let right = format!("ads blocked: {}", browser.blocked_count);
+    fb.draw_text((width as f32 - 120.0) * dsf, 17.0 * dsf, &right, 11.0 * dsf, MUTED_2);
+    // hairline under header
+    fb.fill_rect(0.0, 40.0 * dsf, width as f32 * dsf, dsf, LINE);
+    // content: the start page rendered by Brownie
+    let content_h = height.saturating_sub(64);
+    let (page_fb, _root) = browser
+        .render_page(&page, width, content_h, 0.0, 1)
+        .map_err(|e| e.to_string())?;
+    for y in 0..page_fb.height {
+        for x in 0..page_fb.width {
+            let i = (y * page_fb.width + x) * 4;
+            let c = brownie::css::Color { r: page_fb.data[i], g: page_fb.data[i + 1], b: page_fb.data[i + 2], a: 255 };
+            for dy in 0..ds as i32 {
+                for dx in 0..ds as i32 {
+                    fb.set_pixel(
+                        (x as u32 * ds + dx as u32) as i32,
+                        ((41 + y) as u32 * ds + dy as u32) as i32,
+                        c,
+                    );
+                }
+            }
+        }
+    }
+    // footer hairline + footer
+    let fy = (height - 24) as f32 * dsf;
+    fb.fill_rect(0.0, fy, width as f32 * dsf, dsf, LINE);
+    fb.fill_rect(0.0, fy + dsf, width as f32 * dsf, 23.0 * dsf, PAPER);
+    fb.draw_text(
+        18.0 * dsf,
+        (height as f32 - 17.0) * dsf,
+        "brow://start - KucLab Brow - start - ads blocked: 0 - [/] open  [j/k] scroll  [q] quit",
+        11.0 * dsf,
+        MUTED_2,
+    );
+    brownie::png::write_png(out_path, &fb).map_err(|e| e.to_string())?;
+    println!("saved {} ({}x{} @{}x)", out_path, width * ds as usize, height * ds as usize, ds);
+    Ok(())
 }
 
 fn blit(fb: &brownie::Framebuffer, out: &mut String) {

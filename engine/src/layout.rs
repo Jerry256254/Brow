@@ -142,7 +142,7 @@ pub fn build(doc: &Document, sheets: &[Stylesheet], viewport_width: f32) -> Layo
     let mut root_style = Computed::default();
     root_style.display = Display::Block;
     root_style.width = Some(Length::Px(viewport_width));
-    root_style.background = Some(crate::css::Color::rgb(255, 255, 255));
+    root_style.background = Some(crate::theme::PAGE_BG);
     let mut root = LayoutBox::new(BoxKind::Block, root_style);
     for &c in doc.children(doc.root) {
         match doc.nodes.get(c) {

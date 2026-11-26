@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KucLab Brow - start</title>
+<style>
+html, body { background-color: #f2eee6; color: #1c1b18; margin: 0; padding: 0; font-size: 16px; }
+.wrap { width: 100%; }
+.site-head { border-bottom: 1px solid #d9d1c4; padding: 18px 34px; }
+.brand { font-size: 30px; font-weight: bold; color: #14130f; }
+.nav { color: #5b554a; font-size: 13px; margin: 0 0 0 26px; }
+.nav a { color: #5b554a; margin: 0 13px 0 0; }
+.head-note { color: #6b6457; font-size: 11px; margin: 0 0 0 26px; }
+.hero { padding: 76px 34px 56px 34px; }
+.kicker { color: #6b6457; font-size: 11px; margin: 0 0 18px 0; }
+h1 { font-size: 52px; color: #14130f; margin: 0 0 22px 0; width: 80%; }
+h1 .accent { color: #2b6ca3; }
+.lead { color: #5b554a; font-size: 18px; width: 52%; margin: 0 0 30px 0; }
+.btn { background-color: #16202a; color: #ffffff; width: 190px; padding: 12px 0; text-align: center; font-size: 13px; font-weight: bold; margin: 0 0 14px 0; }
+.fine { color: #6b6457; font-size: 12px; margin: 0; }
+.stats { border-top: 1px solid #d9d1c4; margin: 26px 34px 0 34px; }
+.stat { border-bottom: 1px solid #d9d1c4; padding: 16px 0; }
+.stat b { font-size: 26px; color: #14130f; font-weight: bold; }
+.stat span { color: #6b6457; font-size: 11px; margin: 0 0 0 12px; }
+.section { padding: 40px 34px; }
+.label { color: #6b6457; font-size: 11px; margin: 0 0 14px 0; }
+h2 { font-size: 30px; color: #14130f; margin: 0 0 12px 0; }
+ol { margin: 0; padding: 0 0 0 22px; color: #5b554a; }
+li { margin: 0 0 8px 0; }
+.site-foot { border-top: 1px solid #d9d1c4; padding: 18px 34px; color: #6b6457; font-size: 11px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="site-head">
+    <span class="brand">KucLab Brow</span>
+    <span class="nav"><a href="#start">Start</a><a href="#engine">Engine</a><a href="#blocklist">Ad blocker</a><a href="#about">About</a></span>
+    <span class="head-note">ads blocked: 0</span>
+  </div>
+  <div class="hero">
+    <p class="kicker">A SMALL BROWSER &middot; OWN ENGINE &middot; AD BLOCKER</p>
+    <h1>Browse with your own <span class="accent">engine</span>.</h1>
+    <p class="lead">KucLab Brow renders every page with Brownie, our own engine. No third-party browser engine, no tracking, no bloat.</p>
+    <div class="btn">Open a page</div>
+    <p class="fine">No account &middot; No tracking &middot; Press / and type a URL</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><b>0</b><span>external crates in the default build</span></div>
+    <div class="stat"><b>100%</b><span>own HTML, CSS, layout and rasterizer</span></div>
+    <div class="stat"><b>ads</b><span>blocked before any request is sent</span></div>
+    <div class="stat"><b>1</b><span>binary: brow</span></div>
+  </div>
+  <div class="section" id="start">
+    <p class="label">01 / START HERE</p>
+    <h2>Three steps to your first page.</h2>
+    <ol>
+      <li>Press / and type an address.</li>
+      <li>Press Enter to load it.</li>
+      <li>Scroll with j and k. Press q to quit.</li>
+    </ol>
+  </div>
+  <div class="section" id="engine">
+    <p class="label">02 / ENGINE</p>
+    <h2>Brownie does the rendering.</h2>
+    <p class="lead" style="width:70%">HTML parser, CSS cascade, layout and a software rasterizer written from scratch in Rust. Screenshots are encoded to PNG by our own encoder.</p>
+  </div>
+  <div class="site-foot">KucLab Brow - engine: Brownie - design: paper and ink</div>
+</div>
+</body>
+</html>

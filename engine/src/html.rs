@@ -146,6 +146,7 @@ fn decode_one(ent: &str) -> Option<char> {
         "quot" => Some('"'),
         "apos" => Some('\''),
         "nbsp" => Some('\u{00a0}'),
+        "middot" => Some('\u{00b7}'),
         _ => {
             if let Some(num) = ent.strip_prefix("#x").or_else(|| ent.strip_prefix("#X")) {
                 u32::from_str_radix(num, 16).ok().and_then(char::from_u32)

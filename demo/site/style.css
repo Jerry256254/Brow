@@ -1,32 +1,25 @@
-body {
-  background-color: #f4f6fb;
-  color: #1a1a2e;
-  font-size: 16px;
-}
-h1 {
-  color: #3b2fd4;
-  font-size: 32px;
-  margin: 12px 0;
-}
-h2 {
-  color: #222;
-  font-size: 22px;
-}
-.lead {
-  color: #444466;
-  font-size: 18px;
-}
-.card {
-  background-color: #ffffff;
-  border: 2px solid #3b2fd4;
-  padding: 12px;
-  margin: 12px 0;
-  width: 70%;
-}
-code {
-  background-color: #eeeeff;
-  color: #a00;
-}
-a {
-  color: #0000ee;
-}
+/* KucLab Brow demo - Gerin Paper Design v2 tokens (adapted) */
+html, body { background-color: #f2eee6; color: #1c1b18; margin: 0; padding: 0; font-size: 16px; }
+.site-head { border-bottom: 1px solid #d9d1c4; padding: 18px 34px; }
+.brand { font-size: 28px; font-weight: bold; color: #14130f; }
+.nav { margin: 0 0 0 26px; font-size: 13px; }
+.nav a { color: #1f4e73; margin: 0 12px 0 0; }
+.hero { padding: 56px 34px 40px 34px; }
+.kicker { color: #6b6457; font-size: 11px; margin: 0 0 16px 0; }
+h1 { font-size: 44px; color: #14130f; margin: 0 0 18px 0; width: 82%; }
+h1 .accent { color: #2b6ca3; }
+.lead { color: #5b554a; font-size: 17px; width: 56%; margin: 0 0 24px 0; }
+.btn { background-color: #16202a; color: #ffffff; width: 170px; padding: 11px 0; text-align: center; font-size: 13px; font-weight: bold; }
+.stats { border-top: 1px solid #d9d1c4; margin: 10px 34px 0 34px; }
+.stat { border-bottom: 1px solid #d9d1c4; padding: 14px 0; }
+.stat b { font-size: 24px; color: #14130f; font-weight: bold; }
+.stat span { color: #6b6457; font-size: 11px; margin: 0 0 0 12px; }
+.card { background-color: #fffdf9; border: 1px solid #d9d1c4; padding: 22px 26px; margin: 26px 34px; width: 62%; }
+.label { color: #6b6457; font-size: 11px; margin: 0 0 10px 0; }
+h2 { font-size: 26px; color: #14130f; margin: 0 0 10px 0; }
+ul { margin: 0; padding: 0 0 0 22px; color: #5b554a; }
+li { margin: 0 0 6px 0; }
+code { background-color: #f4f0e8; color: #8a2f2f; }
+a { color: #1f4e73; }
+.center { text-align: center; color: #6b6457; }
+.site-foot { border-top: 1px solid #d9d1c4; margin: 26px 34px 0 34px; padding: 16px 0 26px 0; color: #6b6457; font-size: 11px; }

@@ -1,4 +1,4 @@
-//! Brownie — the from-scratch, zero-dependency rendering engine of KucLab Brow:
+//! Brownie - the from-scratch, zero-dependency rendering engine of KucLab Brow:
 //! HTML parser, CSS parser + cascade, layout, software rasterizer, PNG encoder,
 //! HTTP/1.1 client and ad-block filter engine. Hardened with resource limits;
 //! optional `tls` feature adds HTTPS via rustls.
@@ -12,6 +12,7 @@ pub mod net;
 pub mod paint;
 pub mod png;
 pub mod style;
+pub mod theme;
 
 use std::fmt;
 
@@ -132,6 +133,21 @@ impl Browser {
         if resp.status >= 400 {
             return Err(EngineError::Http(resp.status));
         }
+        self.build_page(&url, &resp)
+    }
+
+    /// Load an in-memory HTML document (used for the built-in start page).
+    pub fn open_source(&mut self, url: &str, html: &str) -> Result<Page, EngineError> {
+        let resp = Response {
+            status: 200,
+            headers: vec![("content-type".to_string(), "text/html; charset=utf-8".to_string())],
+            body: html.as_bytes().to_vec(),
+            final_url: url.to_string(),
+        };
+        self.build_page(url, &resp)
+    }
+
+    fn build_page(&mut self, url: &str, resp: &Response) -> Result<Page, EngineError> {
         let is_html = resp.content_type().contains("html");
         let text = resp.text();
         let doc = if is_html { html::parse(&text) } else { html::parse(&format!("<html><head><title>raw</title></head><body><pre>{}</pre></body></html>", html_escape(&text))) };
@@ -191,7 +207,7 @@ impl Browser {
         }
 
         Ok(Page {
-            url,
+            url: url.to_string(),
             final_url: resp.final_url.clone(),
             title,
             status: resp.status,
