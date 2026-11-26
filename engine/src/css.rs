@@ -152,6 +152,9 @@ pub struct Stylesheet {
     pub rules: Vec<Rule>,
 }
 
+/// Max rules per stylesheet (anti DoS on hostile CSS).
+pub const MAX_RULES: usize = 10_000;
+
 pub fn strip_comments(input: &str) -> String {
     let mut out = String::with_capacity(input.len());
     let mut rest = input;
@@ -369,6 +372,9 @@ pub fn parse_stylesheet(input: &str) -> Stylesheet {
                 selectors,
                 declarations: parse_declarations(&decl_text),
             });
+            if rules.len() >= MAX_RULES {
+                break;
+            }
         }
     }
     Stylesheet { rules }
@@ -476,6 +482,13 @@ mod tests {
         assert!(matches_selector(&doc, &parse_selector("div.a > p#x").unwrap(), p));
         assert!(!matches_selector(&doc, &parse_selector("body > p").unwrap(), p));
         assert!(doc.is_element(div));
+    }
+
+    #[test]
+    fn rule_count_is_capped() {
+        let big = "p { color: red; }\n".repeat(50_000);
+        let sheet = parse_stylesheet(&big);
+        assert_eq!(sheet.rules.len(), MAX_RULES);
     }
 
     #[test]

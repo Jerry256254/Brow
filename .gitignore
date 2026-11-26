@@ -1,5 +1,2 @@
 /target
-Cargo.lock
 screenshot-*.png
-*.png
-!docs/**/*.png

@@ -47,18 +47,27 @@ fn collapse_ws(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
 
-fn is_inline_node(doc: &Document, idx: usize, sheets: &[Stylesheet]) -> bool {
+/// Per-document memoization of computed styles (each element styled exactly once).
+type StyleCache = Vec<Option<Computed>>;
+
+fn style_of(doc: &Document, idx: usize, sheets: &[Stylesheet], cache: &mut StyleCache) -> Computed {
+    if let Some(c) = cache[idx] {
+        return c;
+    }
+    let c = crate::style::compute_style(doc, idx, sheets);
+    cache[idx] = Some(c);
+    c
+}
+
+fn is_inline_node(doc: &Document, idx: usize, sheets: &[Stylesheet], cache: &mut StyleCache) -> bool {
     match doc.nodes.get(idx) {
         Some(Node::Text(_)) => true,
-        Some(Node::Element(_)) => {
-            let s = crate::style::compute_style(doc, idx, sheets);
-            s.display == Display::Inline
-        }
+        Some(Node::Element(_)) => style_of(doc, idx, sheets, cache).display == Display::Inline,
         None => false,
     }
 }
 
-fn build_inline(doc: &Document, idx: usize, sheets: &[Stylesheet], inherited: &Computed) -> Option<LayoutBox> {
+fn build_inline(doc: &Document, idx: usize, sheets: &[Stylesheet], cache: &mut StyleCache, inherited: &Computed) -> Option<LayoutBox> {
     match doc.nodes.get(idx)? {
         Node::Text(t) => {
             let text = collapse_ws(t);
@@ -73,13 +82,13 @@ fn build_inline(doc: &Document, idx: usize, sheets: &[Stylesheet], inherited: &C
             if e.tag == "br" {
                 return Some(LayoutBox::new(BoxKind::Br, *inherited));
             }
-            let style = crate::style::compute_style(doc, idx, sheets);
+            let style = style_of(doc, idx, sheets, cache);
             if style.display == Display::None {
                 return None;
             }
             let mut b = LayoutBox::new(BoxKind::Inline, style);
             for &c in doc.children(idx) {
-                if let Some(child) = build_inline(doc, c, sheets, &style) {
+                if let Some(child) = build_inline(doc, c, sheets, cache, &style) {
                     b.children.push(child);
                 }
             }
@@ -88,8 +97,8 @@ fn build_inline(doc: &Document, idx: usize, sheets: &[Stylesheet], inherited: &C
     }
 }
 
-fn build_element(doc: &Document, idx: usize, sheets: &[Stylesheet]) -> Option<LayoutBox> {
-    let style = crate::style::compute_style(doc, idx, sheets);
+fn build_element(doc: &Document, idx: usize, sheets: &[Stylesheet], cache: &mut StyleCache) -> Option<LayoutBox> {
+    let style = style_of(doc, idx, sheets, cache);
     if style.display == Display::None {
         return None;
     }
@@ -101,11 +110,11 @@ fn build_element(doc: &Document, idx: usize, sheets: &[Stylesheet]) -> Option<La
     let mut b = LayoutBox::new(kind, style);
     let mut anon: Option<LayoutBox> = None;
     for &c in doc.children(idx) {
-        if is_inline_node(doc, c, sheets) {
+        if is_inline_node(doc, c, sheets, cache) {
             if anon.is_none() {
                 anon = Some(LayoutBox::new(BoxKind::Anon, b.style));
             }
-            if let Some(child) = build_inline(doc, c, sheets, &b.style) {
+            if let Some(child) = build_inline(doc, c, sheets, cache, &b.style) {
                 anon.as_mut().unwrap().children.push(child);
             }
         } else {
@@ -114,7 +123,7 @@ fn build_element(doc: &Document, idx: usize, sheets: &[Stylesheet]) -> Option<La
                     b.children.push(a);
                 }
             }
-            if let Some(child) = build_element(doc, c, sheets) {
+            if let Some(child) = build_element(doc, c, sheets, cache) {
                 b.children.push(child);
             }
         }
@@ -129,6 +138,7 @@ fn build_element(doc: &Document, idx: usize, sheets: &[Stylesheet]) -> Option<La
 
 /// Build the layout tree for a document at a given viewport width and lay it out.
 pub fn build(doc: &Document, sheets: &[Stylesheet], viewport_width: f32) -> LayoutBox {
+    let mut cache: StyleCache = vec![None; doc.nodes.len()];
     let mut root_style = Computed::default();
     root_style.display = Display::Block;
     root_style.width = Some(Length::Px(viewport_width));
@@ -147,7 +157,7 @@ pub fn build(doc: &Document, sheets: &[Stylesheet], viewport_width: f32) -> Layo
                 }
             }
             _ => {
-                if let Some(b) = build_element(doc, c, sheets) {
+                if let Some(b) = build_element(doc, c, sheets, &mut cache) {
                     root.children.push(b);
                 }
             }

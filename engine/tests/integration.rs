@@ -176,7 +176,7 @@ fn rendered_framebuffer_has_content() {
     let (base, _h) = spawn_server();
     let mut b = browser_with("");
     let page = b.open(&format!("{}/", base)).expect("open");
-    let (fb, _root) = b.render_page(&page, 120, 200, 0.0, 1);
+    let (fb, _root) = b.render_page(&page, 120, 200, 0.0, 1).expect("render");
     let non_white = fb
         .data
         .chunks_exact(4)

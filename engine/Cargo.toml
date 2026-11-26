@@ -3,7 +3,20 @@ name = "brow-engine"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "KucLab Brow rendering engine: own HTML/CSS parser, layout, software rasterizer, HTTP and ad-blocking. Zero external dependencies."
+description = "KucLab Brow rendering engine: own HTML/CSS parser, layout, software rasterizer, HTTP and ad-blocking. Zero mandatory dependencies; optional `tls` feature adds rustls for HTTPS."
+
+[features]
+default = []
+# HTTPS support via rustls (TLS is the one thing we deliberately do not hand-roll).
+tls = ["dep:rustls", "dep:rustls-pki-types", "dep:webpki-roots"]
+
+[dependencies]
+rustls = { version = "0.23", optional = true, default-features = false, features = ["std", "ring", "tls12", "logging"] }
+rustls-pki-types = { version = "1", optional = true }
+webpki-roots = { version = "1", optional = true }
+
+[dev-dependencies]
+rcgen = "0.13"
 
 [lib]
 name = "brow_engine"

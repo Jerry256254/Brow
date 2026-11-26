@@ -9,5 +9,10 @@ description = "KucLab Brow - a smooth, modern, bloat-free browser shell with its
 name = "brow"
 path = "src/main.rs"
 
+[features]
+default = []
+# Build with HTTPS support: cargo build -p brow --features tls
+tls = ["brow-engine/tls"]
+
 [dependencies]
 brow-engine = { path = "../engine" }

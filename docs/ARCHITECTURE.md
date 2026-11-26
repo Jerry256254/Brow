@@ -36,6 +36,34 @@ URL ──▶ net.rs (HTTP/1.1 | file://) ──▶ adblock.rs (filter check)
    blocks + CRC32/Adler32); the shell blits it to the terminal with truecolor
    half-block characters.
 
+## Performance notes
+
+- UA stylesheet is parsed once per process (`style::ua_stylesheet`, `OnceLock`).
+- Computed styles are memoized per element during a layout pass
+  (`layout::StyleCache`) — each element is styled exactly once.
+- `Framebuffer::fill_rect` writes whole row spans instead of per-pixel calls.
+- `paint::walk` culls subtrees outside the viewport, so painting a huge page
+  costs only the visible part (~0.7 ms for a 1 MB page at 320x2000).
+- `brow --bench URL` reports fetch/parse/layout/paint per-op timings.
+
+## Security limits
+
+| limit | value | where |
+|---|---|---|
+| URL length | 4096 B | `net::MAX_URL_LEN` |
+| response headers | 64 KB | `net::MAX_HEADER_BYTES` |
+| response body | 32 MB | `net::MAX_BODY_BYTES` (also chunked) |
+| redirects | 5 | `net::MAX_REDIRECTS` |
+| DOM depth | 512 | `html::MAX_DEPTH` |
+| CSS rules / sheet | 10 000 | `css::MAX_RULES` |
+| adblock rules / pattern | 250 000 / 1 KB | `adblock::MAX_RULES`, `MAX_PATTERN_LEN` |
+| framebuffer | 64 Mpx | `MAX_FRAMEBUFFER_PIXELS` |
+| timeouts | 10 s connect / 15 s IO | `net::CONNECT_TIMEOUT`, `IO_TIMEOUT` |
+
+Plus: same-origin policy for subresources, no https→http redirect downgrade,
+adblock checked before connecting, linear-time entity decoding (no `&&&&…`
+bombs). HTTPS (rustls, webpki roots) is behind the `tls` cargo feature.
+
 ## Ad blocker filter syntax
 
 - `0.0.0.0 ads.example.com` / `127.0.0.1 tracker.io` — hosts-style (host + subdomains)

@@ -133,39 +133,57 @@ fn implied_close(new: &str, top: &str) -> bool {
     }
 }
 
+/// Maximum DOM nesting depth; deeper elements are flattened (anti stack-overflow).
+pub const MAX_DEPTH: usize = 512;
+/// Longest entity reference we try to decode ("&" + 32 chars + ";").
+const MAX_ENTITY_LEN: usize = 34;
+
+fn decode_one(ent: &str) -> Option<char> {
+    match ent {
+        "amp" => Some('&'),
+        "lt" => Some('<'),
+        "gt" => Some('>'),
+        "quot" => Some('"'),
+        "apos" => Some('\''),
+        "nbsp" => Some('\u{00a0}'),
+        _ => {
+            if let Some(num) = ent.strip_prefix("#x").or_else(|| ent.strip_prefix("#X")) {
+                u32::from_str_radix(num, 16).ok().and_then(char::from_u32)
+            } else if let Some(num) = ent.strip_prefix('#') {
+                num.parse::<u32>().ok().and_then(char::from_u32)
+            } else {
+                None
+            }
+        }
+    }
+}
+
 pub fn decode_entities(input: &str) -> String {
+    if !input.contains('&') {
+        return input.to_string();
+    }
     let mut out = String::with_capacity(input.len());
     let mut rest = input;
     while let Some(pos) = rest.find('&') {
         out.push_str(&rest[..pos]);
         let tail = &rest[pos..];
-        let end = tail.find(';').unwrap_or(tail.len());
-        let ent = &tail[1..end.min(tail.len())];
-        let decoded = match ent {
-            "amp" => Some('&'),
-            "lt" => Some('<'),
-            "gt" => Some('>'),
-            "quot" => Some('"'),
-            "apos" => Some('\''),
-            "nbsp" => Some('\u{00a0}'),
-            _ => {
-                if let Some(num) = ent.strip_prefix("#x").or_else(|| ent.strip_prefix("#X")) {
-                    u32::from_str_radix(num, 16)
-                        .ok()
-                        .and_then(char::from_u32)
-                } else if let Some(num) = ent.strip_prefix('#') {
-                    num.parse::<u32>().ok().and_then(char::from_u32)
-                } else {
-                    None
+        // Bound the ';' search so hostile input ("&&&&...") stays O(n).
+        let window = &tail[..tail.len().min(MAX_ENTITY_LEN)];
+        match window.find(';') {
+            Some(rel) if (1..=32).contains(&rel) => {
+                let ent = &window[1..rel];
+                match decode_one(ent) {
+                    Some(c) => {
+                        out.push(c);
+                        rest = &tail[rel + 1..];
+                    }
+                    None => {
+                        out.push('&');
+                        rest = &tail[1..];
+                    }
                 }
             }
-        };
-        match decoded {
-            Some(c) => {
-                out.push(c);
-                rest = &tail[(end + 1).min(tail.len())..];
-            }
-            None => {
+            _ => {
                 out.push('&');
                 rest = &tail[1..];
             }
@@ -441,7 +459,11 @@ pub fn parse(input: &str) -> Document {
                         }
                     }
                 } else if !is_void(&name) && !self_closing {
-                    stack.push(idx);
+                    // Cap nesting depth: deeper tags become empty leaves, so
+                    // later recursive passes (layout/paint) cannot overflow the stack.
+                    if stack.len() < MAX_DEPTH {
+                        stack.push(idx);
+                    }
                 }
             } else {
                 push_text(&mut doc, &stack, "<".to_string());
@@ -477,6 +499,31 @@ mod tests {
     fn decodes_entities() {
         assert_eq!(decode_entities("&lt;a&gt;&quot;&#65;&#x42;&nbsp;"), "<a>\"AB\u{00a0}");
         assert_eq!(decode_entities("plain &unknown; &"), "plain &unknown; &");
+    }
+
+    #[test]
+    fn entity_bomb_is_linear() {
+        let bomb = format!("&{}x;", "&".repeat(200_000));
+        let out = decode_entities(&bomb);
+        assert!(out.starts_with('&'));
+        assert!(out.len() < bomb.len() + 10);
+        // no semicolon at all: stays literal, linear
+        let out2 = decode_entities(&"&".repeat(200_000));
+        assert_eq!(out2.len(), 200_000);
+    }
+
+    #[test]
+    fn depth_is_capped() {
+        let doc = parse(&format!("{}<p>deep</p>{}", "<div>".repeat(100_000), "</div>".repeat(100_000)));
+        let mut max_depth = 0;
+        let mut stack = vec![(doc.root, 0usize)];
+        while let Some((i, d)) = stack.pop() {
+            max_depth = max_depth.max(d);
+            for &c in doc.children(i) {
+                stack.push((c, d + 1));
+            }
+        }
+        assert!(max_depth <= MAX_DEPTH + 2, "depth {}", max_depth);
     }
 
     #[test]

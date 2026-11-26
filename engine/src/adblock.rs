@@ -24,6 +24,10 @@ struct Rule {
     pattern: Pattern,
 }
 
+/// Max filter rules and max pattern length (anti DoS on hostile filter lists).
+pub const MAX_RULES: usize = 250_000;
+pub const MAX_PATTERN_LEN: usize = 1024;
+
 #[derive(Debug, Default)]
 pub struct AdBlock {
     rules: Vec<Rule>,
@@ -104,6 +108,9 @@ fn parse_rule(line: &str) -> Option<Rule> {
     } else {
         (RuleKind::Block, l)
     };
+    if rest.len() > MAX_PATTERN_LEN {
+        return None;
+    }
     // skip comments and headers
     if rest.starts_with('!') || rest.starts_with('[') || rest.starts_with('#') {
         return None;
@@ -161,6 +168,9 @@ impl AdBlock {
         for line in input.lines() {
             if let Some(r) = parse_rule(line) {
                 rules.push(r);
+            }
+            if rules.len() >= MAX_RULES {
+                break;
             }
         }
         AdBlock { rules }
@@ -271,6 +281,18 @@ mod tests {
         let ab = AdBlock::load_from_str("||example.com^\n@@||example.com/allowed.js\n");
         assert!(ab.is_blocked("http://example.com/ads.js"));
         assert!(!ab.is_blocked("http://example.com/allowed.js"));
+    }
+
+    #[test]
+    fn hostile_inputs_are_rejected() {
+        let ab = AdBlock::load_from_str(&format!("||{}^\n", "a".repeat(5000)));
+        assert_eq!(ab.len(), 0);
+        let big = "||x.com^\n".repeat(300_000);
+        let ab2 = AdBlock::load_from_str(&big);
+        assert_eq!(ab2.len(), MAX_RULES);
+        // pathological wildcard still terminates
+        let ab3 = AdBlock::load_from_str("*a*a*a*a*a*a*a*a*b\n");
+        assert!(!ab3.is_blocked(&format!("http://x.com/{}", "a".repeat(5000))));
     }
 
     #[test]

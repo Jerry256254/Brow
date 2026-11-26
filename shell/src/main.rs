@@ -32,6 +32,7 @@ fn usage() -> String {
      \x20 brow --dump-dom URL         print parsed DOM tree\n\
      \x20 brow --dump-layout URL      print layout box tree (--width N, default 80)\n\
      \x20 brow --screenshot URL OUT.png [--width N --height N --scale N]\n\
+     \x20 brow --bench URL [--iterations N --width N --height N]   pipeline benchmark\n\
      \n\
      OPTIONS:\n\
      \x20 --filters PATH              ad-block filter list (default: ./filters/blocklist.txt if present)\n\
@@ -108,6 +109,18 @@ fn run(args: &[String]) -> Result<(), String> {
         let mut out = String::new();
         layout::dump(&root, 0, &mut out);
         print!("{}", out);
+        eprintln!("blocked: {}", b.blocked_count);
+        return Ok(());
+    }
+
+    if let Some(i) = args.iter().position(|a| a == "--bench") {
+        let url = args.get(i + 1).ok_or("--bench needs a URL")?;
+        let iterations: usize = arg_value(args, "--iterations", "20").parse().map_err(|_| "bad --iterations")?;
+        let width: usize = arg_value(args, "--width", "320").parse().map_err(|_| "bad --width")?;
+        let height: usize = arg_value(args, "--height", "400").parse().map_err(|_| "bad --height")?;
+        let mut b = make_browser(args)?;
+        let r = b.bench(url, width, height, iterations).map_err(|e| e.to_string())?;
+        println!("{}", r);
         eprintln!("blocked: {}", b.blocked_count);
         return Ok(());
     }
@@ -307,10 +320,18 @@ fn interactive(start_url: Option<String>) -> Result<(), String> {
         screen.push_str("\x1b[0m\n");
 
         // content
-        let rendered = tabs[active]
+        let rendered = match tabs[active]
             .page
             .as_ref()
-            .map(|page| browser.render_page(page, fb_w, fb_h, tabs[active].scroll, 1));
+            .map(|page| browser.render_page(page, fb_w, fb_h, tabs[active].scroll, 1))
+        {
+            Some(Ok(v)) => Some(v),
+            Some(Err(e)) => {
+                tabs[active].status = format!("render error: {}", e);
+                None
+            }
+            None => None,
+        };
         if let Some((fb, root)) = rendered {
             let max_scroll = (root.h - fb_h as f32).max(0.0);
             tabs[active].scroll = tabs[active].scroll.clamp(0.0, max_scroll);
@@ -436,10 +457,12 @@ fn interactive(start_url: Option<String>) -> Result<(), String> {
                     if let Some(page) = &tabs[active].page {
                         shot_counter += 1;
                         let path = format!("screenshot-{}.png", shot_counter);
-                        let (fb, _) = browser.render_page(page, 320, 400, tabs[active].scroll, 2);
-                        match brow_engine::png::write_png(&path, &fb) {
-                            Ok(()) => tabs[active].status = format!("saved {}", path),
-                            Err(e) => tabs[active].status = format!("screenshot failed: {}", e),
+                        match browser.render_page(page, 320, 400, tabs[active].scroll, 2) {
+                            Ok((fb, _)) => match brow_engine::png::write_png(&path, &fb) {
+                                Ok(()) => tabs[active].status = format!("saved {}", path),
+                                Err(e) => tabs[active].status = format!("screenshot failed: {}", e),
+                            },
+                            Err(e) => tabs[active].status = format!("render failed: {}", e),
                         }
                     }
                 }
@@ -450,6 +473,7 @@ fn interactive(start_url: Option<String>) -> Result<(), String> {
 }
 
 fn blit(fb: &brow_engine::Framebuffer, out: &mut String) {
+    use std::fmt::Write as _;
     for r in 0..fb.height / 2 {
         for c in 0..fb.width {
             let ti = ((2 * r) * fb.width + c) * 4;
@@ -460,11 +484,10 @@ fn blit(fb: &brow_engine::Framebuffer, out: &mut String) {
             }
             let (tr, tg, tb) = (fb.data[ti], fb.data[ti + 1], fb.data[ti + 2]);
             let (br, bg, bb) = (fb.data[bi], fb.data[bi + 1], fb.data[bi + 2]);
-            out.push_str(&format!("\x1b[38;2;{};{};{}m\x1b[48;2;{};{};{}m\u{2580}", tr, tg, tb, br, bg, bb));
+            let _ = write!(out, "\x1b[38;2;{};{};{}m\x1b[48;2;{};{};{}m\u{2580}", tr, tg, tb, br, bg, bb);
         }
         out.push_str("\x1b[0m\n");
     }
-    // fill remaining rows if fb shorter than screen
 }
 
 fn short(s: &str, max: usize) -> String {

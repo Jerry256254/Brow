@@ -42,13 +42,22 @@ impl Framebuffer {
     }
 
     pub fn fill_rect(&mut self, x: f32, y: f32, w: f32, h: f32, c: Color) {
-        let x0 = x.floor() as i32;
-        let y0 = y.floor() as i32;
-        let x1 = (x + w).ceil() as i32;
-        let y1 = (y + h).ceil() as i32;
+        let x0 = (x.floor() as i32).clamp(0, self.width as i32) as usize;
+        let y0 = (y.floor() as i32).clamp(0, self.height as i32) as usize;
+        let x1 = ((x + w).ceil() as i32).clamp(0, self.width as i32) as usize;
+        let y1 = ((y + h).ceil() as i32).clamp(0, self.height as i32) as usize;
+        if x1 <= x0 || y1 <= y0 {
+            return;
+        }
+        // span writes per row instead of per-pixel bounds checks
         for py in y0..y1 {
-            for px in x0..x1 {
-                self.set_pixel(px, py, c);
+            let row = py * self.width;
+            let span = &mut self.data[(row + x0) * 4..(row + x1) * 4];
+            for px in span.chunks_exact_mut(4) {
+                px[0] = c.r;
+                px[1] = c.g;
+                px[2] = c.b;
+                px[3] = c.a;
             }
         }
     }
@@ -107,6 +116,12 @@ pub fn render(root: &LayoutBox, width: usize, height: usize, scroll_y: f32, ds: 
 }
 
 fn walk(b: &LayoutBox, dx: f32, dy: f32, fb: &mut Framebuffer, dsf: f32, ds: u32) {
+    // Cull subtrees fully outside the viewport (vertical axis) — this is what
+    // keeps painting snappy on very tall pages.
+    let y_dev = (b.y + dy) * dsf;
+    if y_dev >= fb.height as f32 || y_dev + b.h * dsf <= 0.0 {
+        return;
+    }
     match b.kind {
         BoxKind::Block | BoxKind::Anon | BoxKind::Inline => {
             let x = (b.x + dx) * dsf;
@@ -146,17 +161,18 @@ fn draw_glyph(fb: &mut Framebuffer, x: f32, y: f32, ch: char, scale: u32, c: Col
     let g = font::glyph(ch);
     let gx0 = x.round() as i32;
     let gy0 = y.round() as i32;
+    let s = scale as f32;
     for row in 0..font::GLYPH_H as usize {
         let bits = g[row];
         for col in 0..font::GLYPH_W as usize {
             if bits & (1 << col) != 0 {
-                let px = gx0 + (col as u32 * scale) as i32;
-                let py = gy0 + (row as u32 * scale) as i32;
-                for dy in 0..scale as i32 {
-                    for dx in 0..scale as i32 {
-                        fb.set_pixel(px + dx, py + dy, c);
-                    }
-                }
+                fb.fill_rect(
+                    (gx0 + (col as u32 * scale) as i32) as f32,
+                    (gy0 + (row as u32 * scale) as i32) as f32,
+                    s,
+                    s,
+                    c,
+                );
             }
         }
     }

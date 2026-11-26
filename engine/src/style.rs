@@ -259,11 +259,19 @@ fn apply_longhand(c: &mut Computed, prop: &str, value: &str) {
     }
 }
 
+/// Parsed UA stylesheet, cached for the process lifetime (perf: it used to be
+/// re-parsed for every single element).
+pub fn ua_stylesheet() -> &'static Stylesheet {
+    static UA: std::sync::OnceLock<Stylesheet> = std::sync::OnceLock::new();
+    UA.get_or_init(|| css::parse_stylesheet(UA_CSS))
+}
+
 /// Compute the style of an element: UA sheet < author sheets < inline style,
 /// ordered by specificity then source order.
 pub fn compute_style(doc: &Document, el: usize, author_sheets: &[Stylesheet]) -> Computed {
-    let ua = css::parse_stylesheet(UA_CSS);
-    let mut sheets: Vec<&Stylesheet> = vec![&ua];
+    let ua = ua_stylesheet();
+    let mut sheets: Vec<&Stylesheet> = Vec::with_capacity(author_sheets.len() + 1);
+    sheets.push(ua);
     sheets.extend(author_sheets.iter());
 
     let mut matched: Vec<((u32, u32, u32), usize, &Vec<(String, String)>)> = Vec::new();

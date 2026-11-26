@@ -16,11 +16,46 @@ layout engine, software rasterizer and PNG encoder — written in pure Rust with
 - Own HTTP/1.1 client (redirects, chunked encoding) + `file://` support
 - Own ad blocker: hosts-style entries, `||domain^` anchored patterns, `*/ads/*` wildcards, `@@` exceptions
 - Terminal shell: tabs, address bar, scrolling, screenshots
+- HTTPS via the optional `tls` feature (rustls + webpki roots — TLS is the one
+  thing we deliberately do not hand-roll): `cargo build --release -p brow --features tls`
+
+## Performance
+
+Measured with `brow --bench URL --iterations N` (release build, 1 MB page with
+8 000 sections):
+
+| stage  | before | after hardening/optimization |
+|--------|--------|------------------------------|
+| parse  | ~107 MB/s | ~100 MB/s |
+| layout | **1.35 s** | **~58 ms** (UA sheet cached, styles memoized per element) |
+| paint (320x2000 viewport) | 23 ms | **~0.7 ms** (span-based fills + viewport culling) |
+
+```sh
+brow --bench file:///path/to/big.html --iterations 20 --width 320 --height 2000
+```
+
+## Security model
+
+- **Resource limits everywhere**: URL ≤ 4096 B, response headers ≤ 64 KB,
+  body ≤ 32 MB (also enforced for chunked), ≤ 5 redirects, connect/read
+  timeouts, DOM depth ≤ 512, CSS rules ≤ 10 000, filter rules ≤ 250 000,
+  patterns ≤ 1 KB, framebuffer ≤ 64 Mpx — hostile input can't exhaust memory
+  or hang the engine (regression-tested in `engine/tests/security.rs`).
+- **Same-origin policy**: subresources (`<link>`, `<script>`, `<img>`, ...)
+  are only fetched from the page's own origin — a remote page cannot read
+  `file://` or other origins through us.
+- **No https→http downgrade** on redirects.
+- **Ad blocker runs before any connection** — blocked requests are never sent.
+- **HTTPS** with rustls behind `--features tls` (default build stays
+  zero-dependency); certificate validation via webpki roots, tested against a
+  loopback TLS server (`engine/tests/tls.rs`).
 
 ## Build & run
 
 ```sh
 cargo build --release
+# with HTTPS:
+cargo build --release -p brow --features tls
 
 # interactive terminal browser
 ./target/release/brow https://example.com
@@ -59,10 +94,10 @@ filters/  default blocklist
 ## Roadmap
 
 1. Packaging, in this order: **.rpm → .apk → .exe → .deb**
-2. HTTPS via a pluggable TLS transport (rustls) — transport only; rendering stays ours
-3. Image decoding (PNG/JPEG) into the rasterizer
-4. JavaScript engine (own interpreter)
-5. GUI shell (native window) on top of the same engine
+2. Image decoding (PNG/JPEG) into the rasterizer
+3. JavaScript engine (own interpreter)
+4. GUI shell (native window) + per-tab process sandboxing on top of the same engine
+5. More CSS (flex/grid, floats, margin collapsing), HTTP/2, cache
 
 See `docs/ARCHITECTURE.md` for engine details.
 
