@@ -75,6 +75,21 @@ brow --bench file:///path/to/big.html --iterations 20 --width 320 --height 2000
   zero-dependency); certificate validation via webpki roots, tested against a
   loopback TLS server (`engine/tests/tls.rs`).
 
+## Download (.rpm)
+
+Prebuilt package (uploaded in this repo, built by `packaging/build-rpm.sh`):
+
+- [kucclab-brow-0.1.0-1.x86_64.rpm](releases/kucclab-brow-0.1.0-1.x86_64.rpm) ([sha256](releases/kucclab-brow-0.1.0-1.x86_64.rpm.sha256))
+
+```sh
+sha256sum -c releases/kucclab-brow-0.1.0-1.x86_64.rpm.sha256
+sudo rpm -i releases/kucclab-brow-0.1.0-1.x86_64.rpm   # or: sudo dnf install ./...
+brow --help
+```
+
+Contents: `/usr/bin/brow`, `/usr/share/kucclab-brow/blocklist.txt`, docs, `.desktop` file.
+Packaging order: **.rpm -> .apk -> .exe -> .deb** (rpm is done, see `packaging/`).
+
 ## Build & run
 
 ```sh
@@ -119,7 +134,7 @@ filters/  default blocklist
 
 ## Roadmap
 
-1. Packaging, in this order: **.rpm → .apk → .exe → .deb**
+1. Packaging, in this order: **.rpm (done - see `releases/`) → .apk → .exe → .deb**
 2. Image decoding (PNG/JPEG) into the rasterizer
 3. JavaScript engine (own interpreter)
 4. GUI shell (native window) + per-tab process sandboxing on top of the same engine
