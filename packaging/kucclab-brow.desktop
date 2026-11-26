@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=KucLab Brow
+Comment=A small browser with its own engine (Brownie) and an ad blocker
+Exec=brow
+Terminal=true
+Type=Application
+Categories=Network;WebBrowser;
+Keywords=browser;internet;

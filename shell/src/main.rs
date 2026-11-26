@@ -8,6 +8,7 @@ use std::io::{IsTerminal, Read, Write};
 use std::process::{Command, Stdio};
 
 const DEFAULT_FILTERS: &str = "filters/blocklist.txt";
+const SYSTEM_FILTERS: &str = "/usr/share/kucclab-brow/blocklist.txt";
 const START_PAGE: &str = include_str!("../assets/start.html");
 
 struct Tab {
@@ -62,6 +63,9 @@ fn make_browser(args: &[String]) -> Result<Browser, String> {
     } else if std::path::Path::new(DEFAULT_FILTERS).exists() {
         b.adblock = AdBlock::load_from_file(DEFAULT_FILTERS)
             .map_err(|e| format!("cannot load {}: {}", DEFAULT_FILTERS, e))?;
+    } else if std::path::Path::new(SYSTEM_FILTERS).exists() {
+        b.adblock = AdBlock::load_from_file(SYSTEM_FILTERS)
+            .map_err(|e| format!("cannot load {}: {}", SYSTEM_FILTERS, e))?;
     }
     Ok(b)
 }
