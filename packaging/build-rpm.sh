@@ -7,6 +7,7 @@ cd "$(dirname "$0")/.."
 
 echo "==> cargo build --release (with tls)"
 cargo build --release -p brow --features tls
+command -v strip >/dev/null 2>&1 && strip target/release/brow || true
 
 STAGE=build/rpm-root
 rm -rf build dist
