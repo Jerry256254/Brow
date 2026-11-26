@@ -1,0 +1,13 @@
+[package]
+name = "brow"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "KucLab Brow - a smooth, modern, bloat-free browser shell with its own engine and ad blocker."
+
+[[bin]]
+name = "brow"
+path = "src/main.rs"
+
+[dependencies]
+brow-engine = { path = "../engine" }

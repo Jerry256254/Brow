@@ -1,0 +1,10 @@
+[package]
+name = "brow-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "KucLab Brow rendering engine: own HTML/CSS parser, layout, software rasterizer, HTTP and ad-blocking. Zero external dependencies."
+
+[lib]
+name = "brow_engine"
+path = "src/lib.rs"

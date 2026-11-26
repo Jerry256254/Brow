@@ -1,0 +1,31 @@
+! KucLab Brow default blocklist (hosts-style + EasyList-style patterns)
+! ------------------------------------------------------------------
+[Adblock Plus 2.0]
+
+! --- hosts-style entries ---
+0.0.0.0 doubleclick.net
+0.0.0.0 googlesyndication.com
+0.0.0.0 google-analytics.com
+0.0.0.0 ads.youtube.com
+0.0.0.0 adservice.google.com
+0.0.0.0 tracking.example.com
+127.0.0.1 ads.example.com
+
+! --- domain-anchored ---
+||doubleclick.net^
+||googlesyndication.com^
+||google-analytics.com^
+||adservice.google.com^
+||tracker.io^
+||ads.yahoo.com^
+
+! --- generic URL patterns ---
+*/ads.js
+*/ads/*
+*/banner.js
+*/tracker.js
+*/pixel.gif?
+*://*/adserver/*
+
+! --- exceptions ---
+@@||example.com/allowed.js

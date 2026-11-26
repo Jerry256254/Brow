@@ -1,0 +1,32 @@
+body {
+  background-color: #f4f6fb;
+  color: #1a1a2e;
+  font-size: 16px;
+}
+h1 {
+  color: #3b2fd4;
+  font-size: 32px;
+  margin: 12px 0;
+}
+h2 {
+  color: #222;
+  font-size: 22px;
+}
+.lead {
+  color: #444466;
+  font-size: 18px;
+}
+.card {
+  background-color: #ffffff;
+  border: 2px solid #3b2fd4;
+  padding: 12px;
+  margin: 12px 0;
+  width: 70%;
+}
+code {
+  background-color: #eeeeff;
+  color: #a00;
+}
+a {
+  color: #0000ee;
+}
