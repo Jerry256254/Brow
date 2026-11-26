@@ -77,12 +77,12 @@ brow --bench file:///path/to/big.html --iterations 20 --width 320 --height 2000
 
 ## Download (.rpm)
 
-Prebuilt package (uploaded in this repo, built by `packaging/build-rpm.sh`):
+Prebuilt package for release tag **v0.1.0** (also in this repo under `releases/`, built by `packaging/build-rpm.sh`):
 
-- [kucclab-brow-0.1.0-1.x86_64.rpm](releases/kucclab-brow-0.1.0-1.x86_64.rpm) ([sha256](releases/kucclab-brow-0.1.0-1.x86_64.rpm.sha256))
+- [kucclab-brow-0.1.0-1.x86_64.rpm](https://raw.githubusercontent.com/Jerry256254/Brow/v0.1.0/releases/kucclab-brow-0.1.0-1.x86_64.rpm) ([sha256](https://raw.githubusercontent.com/Jerry256254/Brow/v0.1.0/releases/kucclab-brow-0.1.0-1.x86_64.rpm.sha256))
 
 ```sh
-sha256sum -c releases/kucclab-brow-0.1.0-1.x86_64.rpm.sha256
+sha256sum -c <(curl -sL https://raw.githubusercontent.com/Jerry256254/Brow/v0.1.0/releases/kucclab-brow-0.1.0-1.x86_64.rpm.sha256)  # or from a clone: releases/
 sudo rpm -i releases/kucclab-brow-0.1.0-1.x86_64.rpm   # or: sudo dnf install ./...
 brow --help
 ```
