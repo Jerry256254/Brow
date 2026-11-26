@@ -35,9 +35,14 @@ are styled with the same tokens.
 
 Samples (PNG, rendered by Brownie itself):
 
-- `docs/samples/ui.png` - one full browser frame (chrome + start page): `brow --frame-shot docs/samples/ui.png`
-- `docs/samples/start.png` - the start page alone
-- `docs/samples/demo.png` - `demo/site` rendered (note `blocked: 2` - ads never fetched)
+![Browser frame: chrome + start page](docs/samples/ui.png)
+
+![Start page](docs/samples/start.png)
+
+![Demo page - note the ad blocker counter](docs/samples/demo.png)
+
+Regenerate with: `brow --frame-shot docs/samples/ui.png` and
+`brow --screenshot "file://$PWD/shell/assets/start.html" docs/samples/start.png --width 420 --height 560`
 
 ## Performance
 
