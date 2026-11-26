@@ -12,7 +12,7 @@ path = "src/main.rs"
 [features]
 default = []
 # Build with HTTPS support: cargo build -p brow --features tls
-tls = ["brow-engine/tls"]
+tls = ["brownie/tls"]
 
 [dependencies]
-brow-engine = { path = "../engine" }
+brownie = { path = "../engine" }

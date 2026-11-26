@@ -1,7 +1,7 @@
 //! Integration tests: real HTTP over loopback, rendering, screenshots, adblock.
 
-use brow_engine::adblock::AdBlock;
-use brow_engine::{layout, Browser};
+use brownie::adblock::AdBlock;
+use brownie::{layout, Browser};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::thread;
@@ -80,8 +80,8 @@ fn loads_page_parses_title_and_applies_css() {
     assert_eq!(page.title, "Test Page");
     assert_eq!(page.final_url, format!("{}/", base));
     let h1 = page.doc.find_first("h1").expect("h1");
-    let style = brow_engine::style::compute_style(&page.doc, h1, &page.sheets);
-    assert_eq!(style.color, brow_engine::css::Color::rgb(255, 0, 0), "author css must apply");
+    let style = brownie::style::compute_style(&page.doc, h1, &page.sheets);
+    assert_eq!(style.color, brownie::css::Color::rgb(255, 0, 0), "author css must apply");
 }
 
 #[test]
@@ -111,7 +111,7 @@ fn redirects_are_followed() {
 #[test]
 fn chunked_body_decoded() {
     let (base, _h) = spawn_server();
-    let resp = brow_engine::net::fetch(&format!("{}/chunked", base), 5).expect("fetch");
+    let resp = brownie::net::fetch(&format!("{}/chunked", base), 5).expect("fetch");
     assert_eq!(resp.text(), "hello world");
 }
 
@@ -165,8 +165,8 @@ fn file_scheme_loads_local_demo() {
     assert_eq!(page.title, "KucLab Brow demo");
     // style.css must have been picked up via <link>
     let h1 = page.doc.find_first("h1").unwrap();
-    let style = brow_engine::style::compute_style(&page.doc, h1, &page.sheets);
-    assert_eq!(style.color, brow_engine::css::Color::rgb(0x3b, 0x2f, 0xd4));
+    let style = brownie::style::compute_style(&page.doc, h1, &page.sheets);
+    assert_eq!(style.color, brownie::css::Color::rgb(0x3b, 0x2f, 0xd4));
     // ads.js and ads/banner.png are blocked by the filter
     assert_eq!(b.blocked_count, 2, "script + img blocked, got {}", b.blocked_count);
 }

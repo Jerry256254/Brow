@@ -1,9 +1,9 @@
 [package]
-name = "brow-engine"
+name = "brownie"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "KucLab Brow rendering engine: own HTML/CSS parser, layout, software rasterizer, HTTP and ad-blocking. Zero mandatory dependencies; optional `tls` feature adds rustls for HTTPS."
+description = "Brownie — the own rendering engine of the KucLab Brow browser: HTML/CSS parser, layout, software rasterizer, HTTP and ad-blocking. Zero mandatory dependencies; optional `tls` feature adds rustls for HTTPS."
 
 [features]
 default = []
@@ -19,5 +19,5 @@ webpki-roots = { version = "1", optional = true }
 rcgen = "0.13"
 
 [lib]
-name = "brow_engine"
+name = "brownie"
 path = "src/lib.rs"

@@ -2,7 +2,9 @@
 
 A smooth, modern, **bloat-free browser with its own rendering engine** and a built-in **ad blocker**.
 
-Everything you see is rendered by `brow-engine` — our own HTML parser, CSS cascade,
+**Naming:** the browser is **KucLab Brow** (binary `brow`); its engine is **Brownie** (crate `brownie`).
+
+Everything you see is rendered by **Brownie** (`brownie`) — our own HTML parser, CSS cascade,
 layout engine, software rasterizer and PNG encoder — written in pure Rust with
 **zero external dependencies**. No Blink, no WebKit, no bloat.
 
@@ -77,7 +79,7 @@ disable with `--no-adblock`).
 
 ```
 shell/    brow binary — terminal UI (tabs, URL bar) + CLI modes
-engine/   brow-engine library
+engine/   brownie library (the Brownie engine)
   html.rs     HTML tokenizer + tree builder (arena DOM)
   css.rs      CSS parser, selectors, colors
   style.rs    UA stylesheet + cascade -> computed style

@@ -1,4 +1,4 @@
-//! KucLab Brow engine — a from-scratch, zero-dependency rendering engine:
+//! Brownie — the from-scratch, zero-dependency rendering engine of KucLab Brow:
 //! HTML parser, CSS parser + cascade, layout, software rasterizer, PNG encoder,
 //! HTTP/1.1 client and ad-block filter engine. Hardened with resource limits;
 //! optional `tls` feature adds HTTPS via rustls.

@@ -1,4 +1,4 @@
-//! KucLab Brow built-in bitmap font: 5x7 glyphs in an 8x8 cell, ASCII 32..=126.
+//! Brownie built-in bitmap font: 5x7 glyphs in an 8x8 cell, ASCII 32..=126.
 //! Each glyph is stored as 35 chars (7 rows x 5 cols), '#' = set pixel.
 //! Parsed once at startup into bitmaps; scaled by an integer factor when drawn.
 

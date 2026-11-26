@@ -14,7 +14,7 @@ use rustls::{ClientConfig, RootCertStore};
 #[cfg(feature = "tls")]
 use rustls_pki_types::ServerName;
 
-pub const USER_AGENT: &str = "KucLab-Brow/0.1 (+own engine)";
+pub const USER_AGENT: &str = "KucLab-Brow/0.1 (Brownie engine)";
 
 /// Security/resource limits (defense against hostile servers and inputs).
 pub const MAX_URL_LEN: usize = 4096;

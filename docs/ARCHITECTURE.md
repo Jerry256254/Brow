@@ -1,6 +1,6 @@
 # KucLab Brow — engine architecture
 
-The engine (`engine/`, crate `brow-engine`) is a from-scratch, zero-dependency
+The engine is **Brownie** (`engine/`, crate `brownie`) — a from-scratch, zero-dependency
 rendering pipeline:
 
 ```

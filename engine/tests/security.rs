@@ -1,8 +1,8 @@
 //! Security & robustness tests: hostile inputs must be handled with strict
 //! resource limits and must never crash or hang the engine.
 
-use brow_engine::adblock::AdBlock;
-use brow_engine::{net, Browser};
+use brownie::adblock::AdBlock;
+use brownie::{net, Browser};
 use std::io::{Read, Write};
 use std::net::TcpListener;
 use std::thread;
@@ -33,10 +33,10 @@ fn spawn_raw<F: Fn(&str) -> (String, Vec<u8>) + Send + 'static>(handler: F) -> S
 #[test]
 fn deep_dom_does_not_overflow() {
     let html = format!("<html><body>{}<p>deep</p></body></html>", "<div>".repeat(200_000));
-    let doc = brow_engine::html::parse(&html);
+    let doc = brownie::html::parse(&html);
     // layout + paint must survive too (recursion bounded by MAX_DEPTH)
     let b = Browser::new();
-    let page = brow_engine::Page {
+    let page = brownie::Page {
         url: "x".into(),
         final_url: "x".into(),
         title: String::new(),
@@ -45,14 +45,14 @@ fn deep_dom_does_not_overflow() {
         sheets: Vec::new(),
     };
     let root = b.layout_page(&page, 200.0);
-    let fb = brow_engine::paint::render(&root, 100, 100, 0.0, 1);
+    let fb = brownie::paint::render(&root, 100, 100, 0.0, 1);
     assert_eq!(fb.width, 100);
 }
 
 #[test]
 fn entity_bomb_does_not_hang() {
     let bomb = "&".repeat(500_000);
-    let out = brow_engine::html::decode_entities(&bomb);
+    let out = brownie::html::decode_entities(&bomb);
     assert_eq!(out.len(), 500_000);
 }
 
@@ -123,15 +123,15 @@ fn same_origin_policy_blocks_cross_origin_subresources() {
     let page = b.open(&format!("{}/", base)).expect("open");
     assert_eq!(page.sheets.len(), 1, "only same-origin stylesheet may load, got {}", page.sheets.len());
     let p = page.doc.find_first("p").unwrap();
-    let st = brow_engine::style::compute_style(&page.doc, p, &page.sheets);
-    assert_eq!(st.color, brow_engine::css::Color::rgb(255, 0, 0));
+    let st = brownie::style::compute_style(&page.doc, p, &page.sheets);
+    assert_eq!(st.color, brownie::css::Color::rgb(255, 0, 0));
 }
 
 #[test]
 fn framebuffer_size_is_capped() {
     let b = Browser::new();
-    let doc = brow_engine::html::parse("<html><body><p>x</p></body></html>");
-    let page = brow_engine::Page {
+    let doc = brownie::html::parse("<html><body><p>x</p></body></html>");
+    let page = brownie::Page {
         url: "x".into(),
         final_url: "x".into(),
         title: String::new(),
@@ -155,11 +155,11 @@ fn long_url_rejected() {
 #[test]
 fn css_and_filters_capped() {
     let big_css = "p { color: red; }\n".repeat(50_000);
-    let sheet = brow_engine::css::parse_stylesheet(&big_css);
-    assert_eq!(sheet.rules.len(), brow_engine::css::MAX_RULES);
+    let sheet = brownie::css::parse_stylesheet(&big_css);
+    assert_eq!(sheet.rules.len(), brownie::css::MAX_RULES);
     let big_list = "||x.com^\n".repeat(300_000);
     let ab = AdBlock::load_from_str(&big_list);
-    assert_eq!(ab.len(), brow_engine::adblock::MAX_RULES);
+    assert_eq!(ab.len(), brownie::adblock::MAX_RULES);
 }
 
 #[test]
@@ -187,21 +187,21 @@ fn perf_smoke_large_page() {
     html.push_str("</body></html>");
     let b = Browser::new();
     let t = std::time::Instant::now();
-    let doc = brow_engine::html::parse(&html);
+    let doc = brownie::html::parse(&html);
     let parse = t.elapsed();
-    let page = brow_engine::Page {
+    let page = brownie::Page {
         url: "x".into(),
         final_url: "x".into(),
         title: "big".into(),
         status: 200,
         doc,
-        sheets: vec![brow_engine::css::parse_stylesheet("h2 { color: #123456; } .c3 { background-color: #eee; }")],
+        sheets: vec![brownie::css::parse_stylesheet("h2 { color: #123456; } .c3 { background-color: #eee; }")],
     };
     let t = std::time::Instant::now();
     let root = b.layout_page(&page, 320.0);
     let layout = t.elapsed();
     let t = std::time::Instant::now();
-    let fb = brow_engine::paint::render(&root, 320, 2000, 0.0, 1);
+    let fb = brownie::paint::render(&root, 320, 2000, 0.0, 1);
     let paint = t.elapsed();
     eprintln!(
         "perf: {} bytes | parse {:?} | layout {:?} | paint {:?} | page height {:.0}px",

@@ -1,8 +1,8 @@
-//! KucLab Brow shell: terminal UI + CLI modes on top of brow-engine.
+//! KucLab Brow shell: terminal UI + CLI modes on top of the Brownie engine.
 
-use brow_engine::adblock::AdBlock;
-use brow_engine::layout::{self, BoxKind};
-use brow_engine::{Browser, Page};
+use brownie::adblock::AdBlock;
+use brownie::layout::{self, BoxKind};
+use brownie::{Browser, Page};
 use std::io::{IsTerminal, Read, Write};
 use std::process::{Command, Stdio};
 
@@ -77,13 +77,13 @@ fn run(args: &[String]) -> Result<(), String> {
     }
 
     if let Some(i) = args.iter().position(|a| a == "--fetch") {
-        let url = brow_engine::normalize_url(args.get(i + 1).ok_or("--fetch needs a URL")?);
+        let url = brownie::normalize_url(args.get(i + 1).ok_or("--fetch needs a URL")?);
         let mut b = make_browser(args)?;
         if b.adblock.is_blocked(&url) {
             b.blocked_count += 1;
             return Err(format!("blocked by ad blocker: {}", url));
         }
-        let resp = brow_engine::net::fetch(&url, b.max_redirects).map_err(|e| e.to_string())?;
+        let resp = brownie::net::fetch(&url, b.max_redirects).map_err(|e| e.to_string())?;
         print!("{}", resp.text());
         eprintln!("-- HTTP {} from {} (blocked so far: {})", resp.status, resp.final_url, b.blocked_count);
         return Ok(());
@@ -146,9 +146,9 @@ fn run(args: &[String]) -> Result<(), String> {
     interactive(url)
 }
 
-fn dump_dom(doc: &brow_engine::Document, idx: usize, depth: usize, out: &mut String) {
+fn dump_dom(doc: &brownie::Document, idx: usize, depth: usize, out: &mut String) {
     match doc.nodes.get(idx) {
-        Some(brow_engine::html::Node::Element(e)) => {
+        Some(brownie::html::Node::Element(e)) => {
             let attrs = e
                 .attrs
                 .iter()
@@ -159,7 +159,7 @@ fn dump_dom(doc: &brow_engine::Document, idx: usize, depth: usize, out: &mut Str
                 dump_dom(doc, c, depth + 1, out);
             }
         }
-        Some(brow_engine::html::Node::Text(t)) => {
+        Some(brownie::html::Node::Text(t)) => {
             let t = t.trim();
             if !t.is_empty() {
                 out.push_str(&format!("{:indent$}\"{}\"\n", "", t, indent = depth * 2));
@@ -381,7 +381,7 @@ fn interactive(start_url: Option<String>) -> Result<(), String> {
             match key {
                 Key::Esc => bar_mode = false,
                 Key::Enter => {
-                    let url = brow_engine::normalize_url(&bar_input);
+                    let url = brownie::normalize_url(&bar_input);
                     bar_mode = false;
                     let tab = &mut tabs[active];
                     tab.status = format!("loading {} ...", url);
@@ -458,7 +458,7 @@ fn interactive(start_url: Option<String>) -> Result<(), String> {
                         shot_counter += 1;
                         let path = format!("screenshot-{}.png", shot_counter);
                         match browser.render_page(page, 320, 400, tabs[active].scroll, 2) {
-                            Ok((fb, _)) => match brow_engine::png::write_png(&path, &fb) {
+                            Ok((fb, _)) => match brownie::png::write_png(&path, &fb) {
                                 Ok(()) => tabs[active].status = format!("saved {}", path),
                                 Err(e) => tabs[active].status = format!("screenshot failed: {}", e),
                             },
@@ -472,7 +472,7 @@ fn interactive(start_url: Option<String>) -> Result<(), String> {
     }
 }
 
-fn blit(fb: &brow_engine::Framebuffer, out: &mut String) {
+fn blit(fb: &brownie::Framebuffer, out: &mut String) {
     use std::fmt::Write as _;
     for r in 0..fb.height / 2 {
         for c in 0..fb.width {
